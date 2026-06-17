@@ -1,0 +1,16 @@
+﻿# Dependencias
+node_modules/
+
+# Variables de entorno (secretos)
+.env
+
+# Archivos temporales y datos locales
+uploads/
+data/
+
+# Artefactos de compilación de blockchain
+blockchain/artifacts/
+blockchain/cache/
+
+# Logs
+*.log
