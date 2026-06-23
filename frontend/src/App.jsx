@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 
-const API = "http://localhost:3001";
+const API = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 const estilosResultado = {
   INTACTO:       { color: "#22c55e", bg: "rgba(34,197,94,0.12)",  border: "#22c55e" },
