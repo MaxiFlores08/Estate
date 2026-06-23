@@ -7,7 +7,7 @@ const Database = require("better-sqlite3");
 const { ethers } = require("ethers");
 
 // ---- Configuracion ----
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 const RPC_URL = process.env.SEPOLIA_RPC_URL;
 const PRIVATE_KEY = process.env.SEPOLIA_PRIVATE_KEY;
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
