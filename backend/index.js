@@ -27,8 +27,14 @@ db.exec(`CREATE TABLE IF NOT EXISTS propiedades (
   id TEXT PRIMARY KEY,
   hash TEXT,
   archivo TEXT,
-  fecha TEXT
+  fecha TEXT,
+  tipo TEXT,
+  metadatos TEXT
 )`);
+// Agrega columnas nuevas si la tabla ya existía sin ellas.
+["tipo", "metadatos"].forEach((col) => {
+  try { db.exec(`ALTER TABLE propiedades ADD COLUMN ${col} TEXT`); } catch {}
+});
 
 // ---- Servidor ----
 const app = express();
@@ -47,11 +53,13 @@ app.post("/registrar", upload.single("documento"), async (req, res) => {
     if (!id || !req.file) {
       return res.status(400).json({ error: "Falta el id o el documento PDF." });
     }
+    const tipo = req.body.tipo || "";
+    const metadatos = req.body.metadatos || "{}";
     const hash = sha256(req.file.buffer);
     const tx = await contrato.registrarPropiedad(id, hash);
     await tx.wait();
-    db.prepare("INSERT INTO propiedades (id, hash, archivo, fecha) VALUES (?, ?, ?, ?)")
-      .run(id, hash, req.file.originalname, new Date().toISOString());
+    db.prepare("INSERT INTO propiedades (id, hash, archivo, fecha, tipo, metadatos) VALUES (?, ?, ?, ?, ?, ?)")
+      .run(id, hash, req.file.originalname, new Date().toISOString(), tipo, metadatos);
     res.json({ ok: true, id, hash, txHash: tx.hash });
   } catch (e) {
     res.status(400).json({ error: e.shortMessage || e.message });
@@ -85,7 +93,7 @@ app.post("/verificar", upload.single("documento"), async (req, res) => {
 // Historial: devuelve todos los registros ordenados por fecha descendente.
 app.get("/historial", (req, res) => {
   try {
-    const filas = db.prepare("SELECT id, hash, archivo, fecha FROM propiedades ORDER BY fecha DESC").all();
+    const filas = db.prepare("SELECT id, hash, archivo, fecha, tipo, metadatos FROM propiedades ORDER BY fecha DESC").all();
     res.json(filas);
   } catch (e) {
     res.status(500).json({ error: e.message });
