@@ -171,6 +171,14 @@ const css = `
     padding: 28px 0;
     font-size: 15px;
   }
+  .rp-preview {
+    width: 100%;
+    height: 400px;
+    margin-bottom: 20px;
+    border: 2px solid #334155;
+    border-radius: 10px;
+    background: #0b1120;
+  }
 `;
 
 export default function App() {
@@ -201,8 +209,16 @@ export default function App() {
 function Seccion({ titulo, endpoint, modo, onExito }) {
   const [id, setId] = useState("");
   const [archivo, setArchivo] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
   const [resultado, setResultado] = useState(null);
   const [cargando, setCargando] = useState(false);
+
+  useEffect(() => {
+    if (!archivo) { setPreviewUrl(null); return; }
+    const url = URL.createObjectURL(archivo);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [archivo]);
 
   async function enviar() {
     if (!id || !archivo) {
@@ -241,8 +257,11 @@ function Seccion({ titulo, endpoint, modo, onExito }) {
         className="rp-file"
         type="file"
         accept="application/pdf"
-        onChange={(e) => setArchivo(e.target.files[0])}
+        onChange={(e) => setArchivo(e.target.files[0] || null)}
       />
+      {previewUrl && (
+        <iframe className="rp-preview" src={previewUrl} title="Vista previa del PDF" />
+      )}
       <button className="rp-btn" onClick={enviar} disabled={cargando}>
         {cargando ? "Procesando..." : (modo === "registrar" ? "Registrar" : "Verificar")}
       </button>
