@@ -29,10 +29,11 @@ db.exec(`CREATE TABLE IF NOT EXISTS propiedades (
   archivo TEXT,
   fecha TEXT,
   tipo TEXT,
-  metadatos TEXT
+  metadatos TEXT,
+  categoria TEXT
 )`);
 // Agrega columnas nuevas si la tabla ya existía sin ellas.
-["tipo", "metadatos"].forEach((col) => {
+["tipo", "metadatos", "categoria"].forEach((col) => {
   try { db.exec(`ALTER TABLE propiedades ADD COLUMN ${col} TEXT`); } catch {}
 });
 
@@ -55,11 +56,12 @@ app.post("/registrar", upload.single("documento"), async (req, res) => {
     }
     const tipo = req.body.tipo || "";
     const metadatos = req.body.metadatos || "{}";
+    const categoria = req.body.categoria || "";
     const hash = sha256(req.file.buffer);
     const tx = await contrato.registrarPropiedad(id, hash);
     await tx.wait();
-    db.prepare("INSERT INTO propiedades (id, hash, archivo, fecha, tipo, metadatos) VALUES (?, ?, ?, ?, ?, ?)")
-      .run(id, hash, req.file.originalname, new Date().toISOString(), tipo, metadatos);
+    db.prepare("INSERT INTO propiedades (id, hash, archivo, fecha, tipo, metadatos, categoria) VALUES (?, ?, ?, ?, ?, ?, ?)")
+      .run(id, hash, req.file.originalname, new Date().toISOString(), tipo, metadatos, categoria);
     res.json({ ok: true, id, hash, txHash: tx.hash });
   } catch (e) {
     res.status(400).json({ error: e.shortMessage || e.message });
@@ -93,7 +95,7 @@ app.post("/verificar", upload.single("documento"), async (req, res) => {
 // Historial: devuelve todos los registros ordenados por fecha descendente.
 app.get("/historial", (req, res) => {
   try {
-    const filas = db.prepare("SELECT id, hash, archivo, fecha, tipo, metadatos FROM propiedades ORDER BY fecha DESC").all();
+    const filas = db.prepare("SELECT id, hash, archivo, fecha, tipo, metadatos, categoria FROM propiedades ORDER BY fecha DESC").all();
     res.json(filas);
   } catch (e) {
     res.status(500).json({ error: e.message });

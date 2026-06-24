@@ -9,6 +9,7 @@ const estilosResultado = {
 };
 
 const TIPOS = ["Mensura", "Arquitectónico", "Estructural"];
+const TIPOS_LEGALES = ["Compraventa", "Donación", "Sucesión"];
 
 /* ── SVG Icons ────────────────────────────────────────────────────────────── */
 const IconBuilding = () => (
@@ -443,8 +444,75 @@ const css = `
   .rp-table tr:hover td      { background:rgba(255,255,255,0.02); }
   .rp-empty { text-align:center; color:var(--muted); padding:32px 0; font-size:14px; }
 
+  /* ── Wizard paso ── */
+  .wizard-step {
+    overflow: hidden;
+    transition: max-height .4s ease, opacity .3s ease;
+  }
+  .wizard-step.oculto { max-height: 0; opacity: 0; pointer-events: none; }
+  .wizard-step.visible { max-height: 9999px; opacity: 1; }
+
+  /* ── Categoria cards ── */
+  .cat-cards {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    margin-bottom: 8px;
+  }
+  .cat-card {
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    padding: 32px 20px;
+    border: 2px solid transparent;
+    border-radius: var(--radius);
+    cursor: pointer; transition: all .2s;
+    font-size: 15px; font-weight: 700; text-align: center;
+  }
+  .cat-card-planos {
+    background: rgba(99,102,241,0.1);
+    border-color: rgba(99,102,241,0.25);
+    color: #a5b4fc;
+  }
+  .cat-card-planos:hover {
+    background: rgba(99,102,241,0.18);
+    border-color: var(--indigo);
+    box-shadow: 0 4px 24px rgba(99,102,241,0.25);
+    transform: translateY(-2px);
+  }
+  .cat-card-legales {
+    background: rgba(6,182,212,0.08);
+    border-color: rgba(6,182,212,0.2);
+    color: #67e8f9;
+  }
+  .cat-card-legales:hover {
+    background: rgba(6,182,212,0.15);
+    border-color: var(--cyan);
+    box-shadow: 0 4px 24px rgba(6,182,212,0.2);
+    transform: translateY(-2px);
+  }
+  .cat-card-emoji { font-size: 2.4rem; line-height: 1; }
+  .cat-card-sub { font-size: 12px; font-weight: 400; opacity: .7; margin-top: -6px; }
+
+  /* ── Volver btn ── */
+  .btn-volver {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px; margin-bottom: 24px;
+    font-size: 13px; font-weight: 600; color: var(--muted);
+    background: transparent; border: 1px solid var(--border);
+    border-radius: 8px; cursor: pointer; transition: all .15s;
+  }
+  .btn-volver:hover { color: var(--text); border-color: var(--border2); background: var(--surface2); }
+
+  /* ── Placeholder legal ── */
+  .legal-placeholder {
+    padding: 40px 24px; text-align: center;
+    color: var(--muted); font-size: 14px; line-height: 1.8;
+    border: 1.5px dashed var(--border2); border-radius: var(--radius-sm);
+    margin-top: 20px;
+  }
+  .legal-placeholder strong { display: block; font-size: 16px; color: var(--text); margin-bottom: 6px; }
+
   /* ── Responsive ── */
   @media (max-width: 768px) {
+    .cat-cards { grid-template-columns: 1fr; }
+
     .nav { padding: 0 16px; }
     .hero { padding: 52px 16px 44px; }
     .kpi-row    { grid-template-columns: 1fr; padding: 0 16px; }
@@ -565,16 +633,52 @@ export default function App() {
   );
 }
 
+function camposLegalesVacios() {
+  return { nroEscritura: "", designacion: "", ubicacion: "", escribano: "", superficie: "", fecha: "" };
+}
+function camposCompraventa() { return { comprador: "", vendedor: "", matricula: "", monto: "" }; }
+function camposDonacion()    { return { donante: "", beneficiario: "" }; }
+function camposSucesion()    { return { causante: "", heredero: "", expediente: "" }; }
+
 /* ── SeccionRegistrar ─────────────────────────────────────────────────────── */
 function SeccionRegistrar({ onExito }) {
-  const [tipo, setTipo]       = useState("Mensura");
-  const [nroPlano, setNroPlano] = useState("");
-  const [comunes, setComunes] = useState(camposComunesVacios());
-  const [extra, setExtra]     = useState(camposMensura());
-  const [archivo, setArchivo] = useState(null);
+  // Wizard
+  const [categoria, setCategoria] = useState(null); // null | "planos" | "legales"
+  const [tipo, setTipo]           = useState(null);  // null = sin selección
+  // Formulario planos
+  const [nroPlano, setNroPlano]   = useState("");
+  const [comunes, setComunes]     = useState(camposComunesVacios());
+  const [extra, setExtra]         = useState(camposMensura());
+  // Formulario legales
+  const [legalesBase, setLegalesBase]   = useState(camposLegalesVacios());
+  const [legalesExtra, setLegalesExtra] = useState(camposCompraventa());
+  const [archivoLegal, setArchivoLegal] = useState(null);
+  const [previewUrlLegal, setPreviewUrlLegal] = useState(null);
+  const [resultadoLegal, setResultadoLegal]   = useState(null);
+  const [cargandoLegal, setCargandoLegal]     = useState(false);
+  // Compartido
+  const [archivo, setArchivo]     = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [resultado, setResultado]   = useState(null);
   const [cargando, setCargando]     = useState(false);
+
+  function elegirCategoria(cat) {
+    setCategoria(cat);
+    setTipo(null);
+    setExtra(camposMensura());
+    setLegalesExtra(camposCompraventa());
+    setResultado(null);
+    setResultadoLegal(null);
+  }
+
+  function volver() {
+    setCategoria(null);
+    setTipo(null);
+    setExtra(camposMensura());
+    setLegalesExtra(camposCompraventa());
+    setResultado(null);
+    setResultadoLegal(null);
+  }
 
   function elegirTipo(t) {
     setTipo(t);
@@ -584,6 +688,45 @@ function SeccionRegistrar({ onExito }) {
     if (t === "Estructural")    setExtra(camposEstructural());
   }
 
+  function elegirTipoLegal(t) {
+    setTipo(t);
+    setResultadoLegal(null);
+    if (t === "Compraventa") setLegalesExtra(camposCompraventa());
+    if (t === "Donación")    setLegalesExtra(camposDonacion());
+    if (t === "Sucesión")    setLegalesExtra(camposSucesion());
+  }
+
+  async function enviarLegal() {
+    if (!tipo) { setResultadoLegal({ error: "Elegí un tipo de escritura antes de registrar." }); return; }
+    if (!legalesBase.nroEscritura.trim()) {
+      setResultadoLegal({ error: "El número de escritura es obligatorio." });
+      return;
+    }
+    if (!archivoLegal) {
+      setResultadoLegal({ error: "Seleccioná el archivo del documento." });
+      return;
+    }
+    setCargandoLegal(true);
+    setResultadoLegal(null);
+    try {
+      const metadatos = JSON.stringify({ ...legalesBase, ...legalesExtra });
+      const form = new FormData();
+      form.append("id", legalesBase.nroEscritura.trim());
+      form.append("documento", archivoLegal);
+      form.append("tipo", tipo);
+      form.append("metadatos", metadatos);
+      form.append("categoria", "legales");
+      const res  = await fetch(API + "/registrar", { method: "POST", body: form });
+      const data = await res.json();
+      setResultadoLegal(data);
+      if (data.ok && onExito) onExito();
+    } catch (e) {
+      setResultadoLegal({ error: e.message });
+    } finally {
+      setCargandoLegal(false);
+    }
+  }
+
   useEffect(() => {
     if (!archivo) { setPreviewUrl(null); return; }
     const url = URL.createObjectURL(archivo);
@@ -591,12 +734,22 @@ function SeccionRegistrar({ onExito }) {
     return () => URL.revokeObjectURL(url);
   }, [archivo]);
 
+  useEffect(() => {
+    if (!archivoLegal) { setPreviewUrlLegal(null); return; }
+    const url = URL.createObjectURL(archivoLegal);
+    setPreviewUrlLegal(url);
+    return () => URL.revokeObjectURL(url);
+  }, [archivoLegal]);
+
   function setComun(campo, valor) { setComunes((p) => ({ ...p, [campo]: valor })); }
   function setExtraField(campo, valor) { setExtra((p) => ({ ...p, [campo]: valor })); }
+  function setLegalBase(campo, valor) { setLegalesBase((p) => ({ ...p, [campo]: valor })); }
+  function setLegalExtra(campo, valor) { setLegalesExtra((p) => ({ ...p, [campo]: valor })); }
 
   async function enviar() {
+    if (!tipo)            { setResultado({ error: "Elegí un tipo de plano antes de registrar." }); return; }
     if (!nroPlano.trim()) { setResultado({ error: "El número de plano es obligatorio." }); return; }
-    if (!archivo)         { setResultado({ error: "Seleccioná el archivo PDF del plano." }); return; }
+    if (!archivo)         { setResultado({ error: "Seleccioná el archivo del plano." }); return; }
     setCargando(true);
     setResultado(null);
     try {
@@ -606,6 +759,7 @@ function SeccionRegistrar({ onExito }) {
       form.append("documento", archivo);
       form.append("tipo", tipo);
       form.append("metadatos", metadatos);
+      form.append("categoria", categoria || "planos");
       const res  = await fetch(API + "/registrar", { method: "POST", body: form });
       const data = await res.json();
       setResultado(data);
@@ -624,168 +778,346 @@ function SeccionRegistrar({ onExito }) {
         <h2>Registrar propiedad</h2>
       </div>
 
-      {/* (a) Datos base */}
-      <div className="form-section">
-        <p className="form-section-title">Datos base</p>
-        <div className="fields-grid">
-          <div className="field-wrap field-full">
-            <label className="field-label">Número de plano *</label>
-            <input className="rp-input" placeholder="Ej: PLN-2024-001"
-              value={nroPlano} onChange={(e) => setNroPlano(e.target.value)} />
-          </div>
-          <div className="field-wrap field-full">
-            <label className="field-label">Título / nombre de obra</label>
-            <input className="rp-input" placeholder="Ej: Residencia Familia García"
-              value={comunes.titulo} onChange={(e) => setComun("titulo", e.target.value)} />
-          </div>
-          <div className="field-wrap">
-            <label className="field-label">Propietario / titular</label>
-            <input className="rp-input" placeholder="Nombre o razón social"
-              value={comunes.propietario} onChange={(e) => setComun("propietario", e.target.value)} />
-          </div>
-          <div className="field-wrap">
-            <label className="field-label">Ubicación</label>
-            <input className="rp-input" placeholder="Dirección o parcela"
-              value={comunes.ubicacion} onChange={(e) => setComun("ubicacion", e.target.value)} />
-          </div>
-          <div className="field-wrap">
-            <label className="field-label">Profesional responsable</label>
-            <input className="rp-input" placeholder="Nombre del profesional"
-              value={comunes.profesional} onChange={(e) => setComun("profesional", e.target.value)} />
-          </div>
-          <div className="field-wrap">
-            <label className="field-label">Matrícula profesional</label>
-            <input className="rp-input" placeholder="Ej: CAP-1234"
-              value={comunes.matricula} onChange={(e) => setComun("matricula", e.target.value)} />
-          </div>
-          <div className="field-wrap">
-            <label className="field-label">Fecha del plano</label>
-            <input className="rp-input" type="date" style={{ colorScheme: "dark" }}
-              value={comunes.fechaPlano} onChange={(e) => setComun("fechaPlano", e.target.value)} />
-          </div>
+      {/* ── PASO 1: elegir categoría ── */}
+      <div className={"wizard-step " + (!categoria ? "visible" : "oculto")}>
+        <p className="form-section-title" style={{ marginBottom: 20 }}>¿Qué querés registrar?</p>
+        <div className="cat-cards">
+          <button type="button" className="cat-card cat-card-planos" onClick={() => elegirCategoria("planos")}>
+            <span className="cat-card-emoji">📐</span>
+            Planos
+            <span className="cat-card-sub">Mensura, Arquitectónico, Estructural</span>
+          </button>
+          <button type="button" className="cat-card cat-card-legales" onClick={() => elegirCategoria("legales")}>
+            <span className="cat-card-emoji">📜</span>
+            Documentos Legales
+            <span className="cat-card-sub">Compraventa, Donación, Sucesión</span>
+          </button>
         </div>
       </div>
 
-      {/* (b)+(c) Tipo de plano con tarjetas */}
-      <div className="form-section">
-        <p className="form-section-title">Tipo de plano</p>
-        <div className="tipo-cards">
-          {TIPOS.map((t) => {
-            const TIcon = TIPO_ICONS[t];
-            return (
-              <button
-                key={t}
-                type="button"
+      {/* ── PASO 2 (planos) ── */}
+      <div className={"wizard-step " + (categoria === "planos" ? "visible" : "oculto")}>
+        <button type="button" className="btn-volver" onClick={volver}>← Volver</button>
+
+        {/* Datos base */}
+        <div className="form-section">
+          <p className="form-section-title">Datos base</p>
+          <div className="fields-grid">
+            <div className="field-wrap field-full">
+              <label className="field-label">Número de plano *</label>
+              <input className="rp-input" placeholder="Ej: PLN-2024-001"
+                value={nroPlano} onChange={(e) => setNroPlano(e.target.value)} />
+            </div>
+            <div className="field-wrap field-full">
+              <label className="field-label">Título / nombre de obra</label>
+              <input className="rp-input" placeholder="Ej: Residencia Familia García"
+                value={comunes.titulo} onChange={(e) => setComun("titulo", e.target.value)} />
+            </div>
+            <div className="field-wrap">
+              <label className="field-label">Propietario / titular</label>
+              <input className="rp-input" placeholder="Nombre o razón social"
+                value={comunes.propietario} onChange={(e) => setComun("propietario", e.target.value)} />
+            </div>
+            <div className="field-wrap">
+              <label className="field-label">Ubicación</label>
+              <input className="rp-input" placeholder="Dirección o parcela"
+                value={comunes.ubicacion} onChange={(e) => setComun("ubicacion", e.target.value)} />
+            </div>
+            <div className="field-wrap">
+              <label className="field-label">Profesional responsable</label>
+              <input className="rp-input" placeholder="Nombre del profesional"
+                value={comunes.profesional} onChange={(e) => setComun("profesional", e.target.value)} />
+            </div>
+            <div className="field-wrap">
+              <label className="field-label">Matrícula profesional</label>
+              <input className="rp-input" placeholder="Ej: CAP-1234"
+                value={comunes.matricula} onChange={(e) => setComun("matricula", e.target.value)} />
+            </div>
+            <div className="field-wrap">
+              <label className="field-label">Fecha del plano</label>
+              <input className="rp-input" type="date" style={{ colorScheme: "dark" }}
+                value={comunes.fechaPlano} onChange={(e) => setComun("fechaPlano", e.target.value)} />
+            </div>
+          </div>
+        </div>
+
+        {/* Tipo de plano */}
+        <div className="form-section">
+          <p className="form-section-title">Tipo de plano</p>
+          <div className="tipo-cards">
+            {TIPOS.map((t) => (
+              <button key={t} type="button"
                 className={"tipo-card" + (tipo === t ? " activo" : "")}
-                onClick={() => elegirTipo(t)}
-              >
-                <span className="tipo-card-icon"><TIcon /></span>
+                onClick={() => elegirTipo(t)}>
                 {t}
               </button>
-            );
-          })}
-        </div>
+            ))}
+          </div>
 
-        {/* (d) Campos específicos con transición suave */}
-        <div className={"campos-especificos" + (tipo === "Mensura" ? " visible" : "")}>
-          <div className="campos-especificos-inner">
-            <div className="fields-grid">
-              <div className="field-wrap">
-                <label className="field-label">Superficie del terreno (m²)</label>
-                <input className="rp-input" type="number" min="0" placeholder="Ej: 450"
-                  value={tipo === "Mensura" ? extra.superficie || "" : ""}
-                  onChange={(e) => setExtraField("superficie", e.target.value)} />
+          <div className={"campos-especificos" + (tipo === "Mensura" ? " visible" : "")}>
+            <div className="campos-especificos-inner">
+              <div className="fields-grid">
+                <div className="field-wrap">
+                  <label className="field-label">Superficie del terreno (m²)</label>
+                  <input className="rp-input" type="number" min="0" placeholder="Ej: 450"
+                    value={tipo === "Mensura" ? extra.superficie || "" : ""}
+                    onChange={(e) => setExtraField("superficie", e.target.value)} />
+                </div>
+                <div className="field-wrap">
+                  <label className="field-label">Inscripción de dominio</label>
+                  <input className="rp-input" placeholder="Ej: Matrícula 12345"
+                    value={tipo === "Mensura" ? extra.inscripcion || "" : ""}
+                    onChange={(e) => setExtraField("inscripcion", e.target.value)} />
+                </div>
               </div>
-              <div className="field-wrap">
-                <label className="field-label">Inscripción de dominio</label>
-                <input className="rp-input" placeholder="Ej: Matrícula 12345"
-                  value={tipo === "Mensura" ? extra.inscripcion || "" : ""}
-                  onChange={(e) => setExtraField("inscripcion", e.target.value)} />
+            </div>
+          </div>
+
+          <div className={"campos-especificos" + (tipo === "Arquitectónico" ? " visible" : "")}>
+            <div className="campos-especificos-inner">
+              <div className="fields-grid">
+                <div className="field-wrap">
+                  <label className="field-label">Subtipo</label>
+                  <select className="rp-select"
+                    value={tipo === "Arquitectónico" ? extra.subtipo || "planta" : "planta"}
+                    onChange={(e) => setExtraField("subtipo", e.target.value)}>
+                    <option value="planta">Planta</option>
+                    <option value="corte">Corte</option>
+                    <option value="vista">Vista</option>
+                    <option value="techos">Techos</option>
+                  </select>
+                </div>
+                <div className="field-wrap">
+                  <label className="field-label">Superficie cubierta (m²)</label>
+                  <input className="rp-input" type="number" min="0" placeholder="Ej: 220"
+                    value={tipo === "Arquitectónico" ? extra.superficieCubierta || "" : ""}
+                    onChange={(e) => setExtraField("superficieCubierta", e.target.value)} />
+                </div>
+                <div className="field-wrap">
+                  <label className="field-label">Escala</label>
+                  <input className="rp-input" placeholder="Ej: 1:100"
+                    value={tipo === "Arquitectónico" ? extra.escala || "" : ""}
+                    onChange={(e) => setExtraField("escala", e.target.value)} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={"campos-especificos" + (tipo === "Estructural" ? " visible" : "")}>
+            <div className="campos-especificos-inner">
+              <div className="fields-grid">
+                <div className="field-wrap">
+                  <label className="field-label">Tipo de estructura</label>
+                  <select className="rp-select"
+                    value={tipo === "Estructural" ? extra.tipoEstructura || "hormigon-armado" : "hormigon-armado"}
+                    onChange={(e) => setExtraField("tipoEstructura", e.target.value)}>
+                    <option value="hormigon-armado">Hormigón armado</option>
+                    <option value="metalica">Metálica</option>
+                    <option value="mixta">Mixta</option>
+                  </select>
+                </div>
+                <div className="field-wrap">
+                  <label className="field-label">Escala</label>
+                  <input className="rp-input" placeholder="Ej: 1:50"
+                    value={tipo === "Estructural" ? extra.escala || "" : ""}
+                    onChange={(e) => setExtraField("escala", e.target.value)} />
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className={"campos-especificos" + (tipo === "Arquitectónico" ? " visible" : "")}>
-          <div className="campos-especificos-inner">
-            <div className="fields-grid">
-              <div className="field-wrap">
-                <label className="field-label">Subtipo</label>
-                <select className="rp-select"
-                  value={tipo === "Arquitectónico" ? extra.subtipo || "planta" : "planta"}
-                  onChange={(e) => setExtraField("subtipo", e.target.value)}>
-                  <option value="planta">Planta</option>
-                  <option value="corte">Corte</option>
-                  <option value="vista">Vista</option>
-                  <option value="techos">Techos</option>
-                </select>
-              </div>
-              <div className="field-wrap">
-                <label className="field-label">Superficie cubierta (m²)</label>
-                <input className="rp-input" type="number" min="0" placeholder="Ej: 220"
-                  value={tipo === "Arquitectónico" ? extra.superficieCubierta || "" : ""}
-                  onChange={(e) => setExtraField("superficieCubierta", e.target.value)} />
-              </div>
-              <div className="field-wrap">
-                <label className="field-label">Escala</label>
-                <input className="rp-input" placeholder="Ej: 1:100"
-                  value={tipo === "Arquitectónico" ? extra.escala || "" : ""}
-                  onChange={(e) => setExtraField("escala", e.target.value)} />
-              </div>
-            </div>
-          </div>
+        {/* Archivo + preview + botón */}
+        <div className="form-section" style={{ marginBottom: 0 }}>
+          <p className="form-section-title">Archivo</p>
+          <input className="rp-file" type="file" accept={ACCEPT_PLANOS}
+            onChange={(e) => setArchivo(e.target.files[0] || null)} />
+          <PreviewArchivo archivo={archivo} previewUrl={previewUrl} />
+          <button className="rp-btn" onClick={enviar} disabled={cargando}>
+            {cargando ? <><span className="spinner" />Registrando...</> : "Registrar en blockchain"}
+          </button>
         </div>
 
-        <div className={"campos-especificos" + (tipo === "Estructural" ? " visible" : "")}>
-          <div className="campos-especificos-inner">
-            <div className="fields-grid">
-              <div className="field-wrap">
-                <label className="field-label">Tipo de estructura</label>
-                <select className="rp-select"
-                  value={tipo === "Estructural" ? extra.tipoEstructura || "hormigon-armado" : "hormigon-armado"}
-                  onChange={(e) => setExtraField("tipoEstructura", e.target.value)}>
-                  <option value="hormigon-armado">Hormigón armado</option>
-                  <option value="metalica">Metálica</option>
-                  <option value="mixta">Mixta</option>
-                </select>
-              </div>
-              <div className="field-wrap">
-                <label className="field-label">Escala</label>
-                <input className="rp-input" placeholder="Ej: 1:50"
-                  value={tipo === "Estructural" ? extra.escala || "" : ""}
-                  onChange={(e) => setExtraField("escala", e.target.value)} />
+        {resultado?.error && <div className="rp-error">{resultado.error}</div>}
+
+        {resultado && !resultado.error && (
+          <>
+            <div className="rp-banner" style={{ color: "#22c55e", background: "rgba(34,197,94,0.12)", borderColor: "#22c55e", marginTop: 18 }}>
+              <IconCheck />
+              <div className="rp-banner-text">
+                <span className="rp-banner-status">Plano registrado</span>
+                <span className="rp-banner-desc">Hash anclado en Sepolia correctamente.</span>
               </div>
             </div>
-          </div>
-        </div>
+            <p className="rp-json-label">Detalle técnico</p>
+            <pre className="rp-json">{JSON.stringify(resultado, null, 2)}</pre>
+          </>
+        )}
       </div>
 
-      {/* (e) Archivo + preview + botón */}
-      <div className="form-section" style={{ marginBottom: 0 }}>
-        <p className="form-section-title">Documento PDF</p>
-        <input className="rp-file" type="file" accept={ACCEPT_PLANOS}
-          onChange={(e) => setArchivo(e.target.files[0] || null)} />
-        <PreviewArchivo archivo={archivo} previewUrl={previewUrl} />
-        <button className="rp-btn" onClick={enviar} disabled={cargando}>
-          {cargando ? <><span className="spinner" />Registrando...</> : "Registrar en blockchain"}
-        </button>
-      </div>
+      {/* ── PASO 2 (legales) ── */}
+      <div className={"wizard-step " + (categoria === "legales" ? "visible" : "oculto")}>
+        <button type="button" className="btn-volver" onClick={volver}>← Volver</button>
 
-      {resultado?.error && <div className="rp-error">{resultado.error}</div>}
-
-      {resultado && !resultado.error && (
-        <>
-          <div className="rp-banner" style={{ color: "#22c55e", background: "rgba(34,197,94,0.12)", borderColor: "#22c55e", marginTop: 18 }}>
-            <IconCheck />
-            <div className="rp-banner-text">
-              <span className="rp-banner-status">Plano registrado</span>
-              <span className="rp-banner-desc">Hash anclado en Sepolia correctamente.</span>
+        {/* (a) Datos base legales */}
+        <div className="form-section">
+          <p className="form-section-title">Datos de la escritura</p>
+          <div className="fields-grid">
+            <div className="field-wrap field-full">
+              <label className="field-label">Número de escritura *</label>
+              <input className="rp-input" placeholder="Ej: ESC-2024-001"
+                value={legalesBase.nroEscritura}
+                onChange={(e) => setLegalBase("nroEscritura", e.target.value)} />
+            </div>
+            <div className="field-wrap field-full">
+              <label className="field-label">Designación del inmueble</label>
+              <input className="rp-input" placeholder="Ej: Lote de terreno rústico"
+                value={legalesBase.designacion}
+                onChange={(e) => setLegalBase("designacion", e.target.value)} />
+            </div>
+            <div className="field-wrap">
+              <label className="field-label">Ubicación</label>
+              <input className="rp-input" placeholder="Distrito / Provincia / Departamento"
+                value={legalesBase.ubicacion}
+                onChange={(e) => setLegalBase("ubicacion", e.target.value)} />
+            </div>
+            <div className="field-wrap">
+              <label className="field-label">Escribano / Notario</label>
+              <input className="rp-input" placeholder="Nombre del escribano"
+                value={legalesBase.escribano}
+                onChange={(e) => setLegalBase("escribano", e.target.value)} />
+            </div>
+            <div className="field-wrap">
+              <label className="field-label">Superficie (m²)</label>
+              <input className="rp-input" type="number" min="0" placeholder="Ej: 320"
+                value={legalesBase.superficie}
+                onChange={(e) => setLegalBase("superficie", e.target.value)} />
+            </div>
+            <div className="field-wrap">
+              <label className="field-label">Fecha</label>
+              <input className="rp-input" type="date" style={{ colorScheme: "dark" }}
+                value={legalesBase.fecha}
+                onChange={(e) => setLegalBase("fecha", e.target.value)} />
             </div>
           </div>
-          <p className="rp-json-label">Detalle técnico</p>
-          <pre className="rp-json">{JSON.stringify(resultado, null, 2)}</pre>
-        </>
-      )}
+        </div>
+
+        {/* (b) Tipo de escritura + campos específicos */}
+        <div className="form-section">
+          <p className="form-section-title">Tipo de escritura</p>
+          <div className="tipo-cards">
+            {TIPOS_LEGALES.map((t) => (
+              <button key={t} type="button"
+                className={"tipo-card" + (tipo === t ? " activo" : "")}
+                onClick={() => elegirTipoLegal(t)}>
+                {t}
+              </button>
+            ))}
+          </div>
+
+          <div className={"campos-especificos" + (tipo === "Compraventa" ? " visible" : "")}>
+            <div className="campos-especificos-inner">
+              <div className="fields-grid">
+                <div className="field-wrap">
+                  <label className="field-label">Comprador</label>
+                  <input className="rp-input" placeholder="Nombre del comprador"
+                    value={tipo === "Compraventa" ? legalesExtra.comprador || "" : ""}
+                    onChange={(e) => setLegalExtra("comprador", e.target.value)} />
+                </div>
+                <div className="field-wrap">
+                  <label className="field-label">Vendedor</label>
+                  <input className="rp-input" placeholder="Nombre del vendedor"
+                    value={tipo === "Compraventa" ? legalesExtra.vendedor || "" : ""}
+                    onChange={(e) => setLegalExtra("vendedor", e.target.value)} />
+                </div>
+                <div className="field-wrap">
+                  <label className="field-label">Matrícula</label>
+                  <input className="rp-input" placeholder="Ej: Matrícula 98765"
+                    value={tipo === "Compraventa" ? legalesExtra.matricula || "" : ""}
+                    onChange={(e) => setLegalExtra("matricula", e.target.value)} />
+                </div>
+                <div className="field-wrap">
+                  <label className="field-label">Monto ($)</label>
+                  <input className="rp-input" type="number" min="0" placeholder="Ej: 150000"
+                    value={tipo === "Compraventa" ? legalesExtra.monto || "" : ""}
+                    onChange={(e) => setLegalExtra("monto", e.target.value)} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={"campos-especificos" + (tipo === "Donación" ? " visible" : "")}>
+            <div className="campos-especificos-inner">
+              <div className="fields-grid">
+                <div className="field-wrap">
+                  <label className="field-label">Donante</label>
+                  <input className="rp-input" placeholder="Nombre del donante"
+                    value={tipo === "Donación" ? legalesExtra.donante || "" : ""}
+                    onChange={(e) => setLegalExtra("donante", e.target.value)} />
+                </div>
+                <div className="field-wrap">
+                  <label className="field-label">Beneficiario</label>
+                  <input className="rp-input" placeholder="Nombre del beneficiario"
+                    value={tipo === "Donación" ? legalesExtra.beneficiario || "" : ""}
+                    onChange={(e) => setLegalExtra("beneficiario", e.target.value)} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={"campos-especificos" + (tipo === "Sucesión" ? " visible" : "")}>
+            <div className="campos-especificos-inner">
+              <div className="fields-grid">
+                <div className="field-wrap">
+                  <label className="field-label">Causante</label>
+                  <input className="rp-input" placeholder="Nombre del causante"
+                    value={tipo === "Sucesión" ? legalesExtra.causante || "" : ""}
+                    onChange={(e) => setLegalExtra("causante", e.target.value)} />
+                </div>
+                <div className="field-wrap">
+                  <label className="field-label">Heredero</label>
+                  <input className="rp-input" placeholder="Nombre del heredero"
+                    value={tipo === "Sucesión" ? legalesExtra.heredero || "" : ""}
+                    onChange={(e) => setLegalExtra("heredero", e.target.value)} />
+                </div>
+                <div className="field-wrap field-full">
+                  <label className="field-label">Expediente</label>
+                  <input className="rp-input" placeholder="Ej: EXP-2024-0055"
+                    value={tipo === "Sucesión" ? legalesExtra.expediente || "" : ""}
+                    onChange={(e) => setLegalExtra("expediente", e.target.value)} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* (c) Archivo + preview + botón */}
+        <div className="form-section" style={{ marginBottom: 0 }}>
+          <p className="form-section-title">Documento</p>
+          <input className="rp-file" type="file" accept={ACCEPT_PLANOS}
+            onChange={(e) => setArchivoLegal(e.target.files[0] || null)} />
+          <PreviewArchivo archivo={archivoLegal} previewUrl={previewUrlLegal} />
+          <button className="rp-btn" onClick={enviarLegal} disabled={cargandoLegal}>
+            {cargandoLegal ? <><span className="spinner" />Registrando...</> : "Registrar en blockchain"}
+          </button>
+        </div>
+
+        {resultadoLegal?.error && <div className="rp-error">{resultadoLegal.error}</div>}
+
+        {resultadoLegal && !resultadoLegal.error && (
+          <>
+            <div className="rp-banner" style={{ color: "#22c55e", background: "rgba(34,197,94,0.12)", borderColor: "#22c55e", marginTop: 18 }}>
+              <IconCheck />
+              <div className="rp-banner-text">
+                <span className="rp-banner-status">Escritura registrada</span>
+                <span className="rp-banner-desc">Hash anclado en Sepolia correctamente.</span>
+              </div>
+            </div>
+            <p className="rp-json-label">Detalle técnico</p>
+            <pre className="rp-json">{JSON.stringify(resultadoLegal, null, 2)}</pre>
+          </>
+        )}
+      </div>
     </div>
   );
 }
