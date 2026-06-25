@@ -165,9 +165,14 @@ const css = `
     display: flex; align-items: center; justify-content: center;
     color: #fff; flex-shrink: 0;
   }
-  .nav-text { display: flex; flex-direction: column; line-height: 1.2; }
-  .nav-text strong { font-size: 1rem; font-weight: 700; color: #f8fafc; letter-spacing: -.3px; }
-  .nav-text span   { font-size: 0.7rem; color: var(--muted); }
+  .nav-text { display: flex; flex-direction: column; line-height: 1.15; }
+  .nav-text strong {
+    font-size: 1.15rem; font-weight: 800; letter-spacing: -.5px;
+    background: var(--grad);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .nav-text span { font-size: 0.68rem; color: var(--muted); letter-spacing: .3px; text-transform: uppercase; font-weight: 500; }
   .nav-badge {
     display: flex; align-items: center; gap: 8px;
     padding: 6px 14px; border-radius: 20px;
@@ -220,10 +225,11 @@ const css = `
     background: var(--surface); border: 1px solid var(--border);
     backdrop-filter: var(--blur); border-radius: var(--radius);
     padding: 22px 26px; display: flex; flex-direction: column; gap: 4px;
+    align-items: center; text-align: center;
   }
   .kpi-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; font-weight: 600; }
   .kpi-value { font-size: 1.7rem; font-weight: 700; color: #f1f5f9; line-height: 1.2; }
-  .kpi-sub   { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+  .kpi-sub   { font-size: 12px; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 5px; text-align: center; }
   .kpi-dot   { width: 7px; height: 7px; border-radius: 50%; background: var(--success); display: inline-block; }
 
   /* ── Main layout — vertical stack ── */
