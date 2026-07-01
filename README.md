@@ -1,4 +1,4 @@
-# 🏛️ Estate — Registro y Certificación de Propiedades en Blockchain
+#  Estate — Registro y Certificación de Propiedades en Blockchain
 
 **Estate** es una plataforma web que certifica la **integridad** y la **existencia temporal** de documentos vinculados a propiedades inmuebles —planos técnicos y escrituras legales— utilizando tecnología **blockchain pública**.
 
@@ -9,11 +9,11 @@ El sistema calcula la huella digital criptográfica (**hash SHA-256**) de cada d
 
 ---
 
-## 📌 El problema
+##  El problema
 
 Los documentos que respaldan una propiedad (escrituras, planos de mensura, arquitectónicos y estructurales) circulan en formato digital y son susceptibles de **falsificación o manipulación**. La verificación de su autenticidad suele depender de la confianza en una entidad centralizada, cuyos registros internos también pueden alterarse sin dejar rastro público.
 
-## 💡 La solución
+##  La solución
 
 Estate registra únicamente el **hash** del documento en la blockchain. Como cualquier cambio —incluso de un solo byte— produce un hash completamente distinto, comparar el hash recalculado con el registrado permite **detectar cualquier alteración**.
 
@@ -23,7 +23,7 @@ Estate registra únicamente el **hash** del documento en la blockchain. Como cua
 
 ---
 
-## ✨ Funcionalidades
+##  Funcionalidades
 
 - ✅ Registro de documentos por **categoría** (Planos / Documentos Legales) y **tipo**.
 - ✅ Cálculo de **hash SHA-256** del documento.
@@ -42,7 +42,7 @@ Estate registra únicamente el **hash** del documento en la blockchain. Como cua
 
 ---
 
-## 🏗️ Arquitectura
+##  Arquitectura
 
 Arquitectura de tres capas desacopladas, cada una desplegada en un servicio especializado:
 
@@ -73,7 +73,7 @@ Usuario → Frontend (Vercel) → Backend (Render) → Contrato (Sepolia)
 
 ---
 
-## 📂 Estructura del proyecto
+##  Estructura del proyecto
 
 ```
 registro-propiedades/
@@ -92,7 +92,7 @@ registro-propiedades/
 
 ---
 
-## 🚀 Ejecución local
+##  Ejecución local
 
 > Requiere Node.js (v20+). El sistema apunta a la red pública Sepolia.
 
@@ -102,7 +102,7 @@ SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/TU_API_KEY
 SEPOLIA_PRIVATE_KEY=0xTU_CLAVE_PRIVADA
 CONTRACT_ADDRESS=0x1b1582aEFCB0AAD37294A5a7c5A7656d8C378baE
 ```
-> ⚠️ Los `.env` contienen secretos y **no se versionan** (están en `.gitignore`).
+>  Los `.env` contienen secretos y **no se versionan** (están en `.gitignore`).
 
 **2. Backend:**
 ```bash
@@ -122,7 +122,7 @@ Abrir `http://localhost:5173/`.
 
 ---
 
-## 🔍 Cómo se usa
+##  Cómo se usa
 
 1. **Registrar:** elegí categoría → tipo → completá los metadatos → subí el documento → *Registrar*. Devuelve el hash y el `txHash` (verificable en Etherscan).
 2. **Verificar INTACTO:** mismo identificador + mismo documento → estado `INTACTO`.
@@ -130,7 +130,7 @@ Abrir `http://localhost:5173/`.
 
 ---
 
-## 🧠 Fundamento conceptual
+##  Fundamento conceptual
 
 **Qué garantiza Estate:**
 - ✅ **Integridad documental** — que el documento no fue alterado desde su registro.
@@ -146,16 +146,16 @@ Esto se conoce como el **problema del oráculo**: la blockchain no valida datos 
 
 ---
 
-## 🔭 Trabajo futuro
+##  Trabajo futuro
 
-- 🔐 Autenticación de actores autorizados con control de roles.
-- 🤖 Extracción automática de metadatos desde el documento.
-- 📑 Más tipos de documento e integración con registros oficiales.
-- 🪙 Tokenización de la titularidad de la propiedad.
+-  Autenticación de actores autorizados con control de roles.
+-  Extracción automática de metadatos desde el documento.
+-  Más tipos de documento e integración con registros oficiales.
+-  Tokenización de la titularidad de la propiedad.
 
 ---
 
-## 📄 Limitaciones (prototipo)
+##  Limitaciones (prototipo)
 
 - Opera sobre la red de prueba **Sepolia** (no la red principal).
 - Sin autenticación ni roles: asume un operador autorizado.
@@ -164,7 +164,7 @@ Esto se conoce como el **problema del oráculo**: la blockchain no valida datos 
 
 ---
 
-## 👥 Equipo
+##  Equipo
 
 | Integrante             |       Rol                                                  |
 |------------------------|------------------------------------------------------------|
